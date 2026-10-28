@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f7f7f7">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>PatiQare - Pet Care App</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-color: #f7f7f7; --card-bg: #ffffff; --text-main: #1a1a1a;
+    --text-muted: #8e8e93; --dark-card: #1c1c1e; --gray-btn: #e5e5ea;
+    --radius-lg: 24px; --radius-md: 18px; --primary: #1c1c1e; --danger: #ff3b30;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { background-color: #d1d1d6; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  
+  .app-container {
+    background-color: var(--bg-color); width: 100%; max-width: 400px; height: 100vh; max-height: 850px;
+    overflow-y: auto; position: relative; padding: 24px 20px 100px 20px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15); border-radius: 40px;
+  }
+  @media (max-width: 450px) { body { background-color: var(--bg-color); } .app-container { height: 100vh; max-height: none; box-shadow: none; border-radius: 0; } }
+
+  /* AUTH */
+  #auth-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); z-index: 1000; padding: 40px 20px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+  #auth-screen h1 { font-size: 2rem; margin-bottom: 10px; color: var(--primary); }
+  #auth-screen p { color: var(--text-muted); margin-bottom: 30px; }
+  .auth-input { width: 100%; max-width: 300px; padding: 15px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 12px; font-size: 1rem; outline: none; }
+  .auth-btn { width: 100%; max-width: 300px; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+  .auth-switch { font-size: 0.9rem; color: var(--text-muted); cursor: pointer; margin-top: 10px; }
+  .auth-error { color: var(--danger); font-size: 0.85rem; margin-bottom: 10px; text-align: center; max-width: 300px; }
+
+  #main-app { display: none; }
+  .page { display: none; }
+  .page.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+  .user-info { display: flex; align-items: center; gap: 12px; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; background-color: #ddd; object-fit: cover; }
+  .greeting h2 { font-size: 1.1rem; color: var(--text-main); font-weight: 700; }
+  .greeting p { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; margin-top: 2px; }
+  .icon-btn { background: var(--card-bg); border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 1.2rem; display: grid; place-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.05); cursor: pointer; }
+
+  .pet-card-section { margin-bottom: 28px; }
+  .pet-card { background: linear-gradient(135deg, #2c2c2e, #1c1c1e); border-radius: var(--radius-lg); padding: 20px; display: flex; align-items: center; position: relative; color: white; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+  .pet-image-wrapper { width: 80px; height: 80px; background: #e0cda9; border-radius: var(--radius-md); overflow: hidden; margin-right: 16px; border: 2px solid rgba(255,255,255,0.1); flex-shrink: 0; }
+  .mascot-svg { width: 100%; height: 100%; transform: scale(1.3) translateY(5px); }
+  .pet-details h1 { font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .pet-details p { color: #a1a1a6; font-size: 0.9rem; margin-top: 4px; font-weight: 500; }
+  .mood-btn { position: absolute; bottom: -12px; right: 20px; background: var(--card-bg); color: var(--text-main); border: none; padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.1); cursor: pointer; }
+
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+  .section-header h3 { font-size: 1rem; color: var(--text-muted); font-weight: 600; }
+  .add-btn, .edit-wellness-btn { background: var(--gray-btn); border: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: var(--text-main); font-size: 1rem; font-weight: 600; cursor: pointer; }
+
+  .task-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .task-item { background: var(--gray-btn); border-radius: var(--radius-md); padding: 12px 16px; display: flex; align-items: center; gap: 16px; transition: all 0.2s; }
+  .task-item.completed { opacity: 0.6; }
+  .task-icon { font-size: 1.5rem; }
+  .task-content { flex: 1; cursor: pointer; }
+  .task-content h4 { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+  .task-item.completed .task-content h4 { text-decoration: line-through; }
+  .task-content p { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; font-weight: 500; }
+  .task-checkbox { width: 32px; height: 32px; border-radius: 50%; background: var(--card-bg); display: grid; place-items: center; color: var(--text-main); font-weight: bold; font-size: 0.9rem; cursor: pointer; }
+  .task-item.completed .task-checkbox { background: var(--text-main); color: white; }
+  .delete-btn { color: var(--danger); font-size: 1.4rem; cursor: pointer; padding: 5px; line-height: 1; }
+
+  .wellness-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .wellness-card { background: var(--gray-btn); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  .wellness-icon { font-size: 1.5rem; color: var(--text-main); }
+  .wellness-data h2 { font-size: 1.2rem; color: var(--text-muted); font-weight: 700; }
+  .wellness-data p { font-size: 0.8rem; color: var(--text-main); font-weight: 600; margin-top: 2px; }
+
+  .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 360px; background: var(--card-bg); border-radius: 40px; display: flex; justify-content: space-between; padding: 8px 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); z-index: 100; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; text-decoration: none; color: var(--text-muted); padding: 8px 12px; border-radius: 30px; transition: all 0.3s ease; gap: 4px; cursor: pointer; }
+  .nav-icon { font-size: 1.2rem; filter: grayscale(100%); transition: all 0.3s ease; }
+  .nav-label { font-size: 0.65rem; font-weight: 600; }
+  .nav-item.active { background: var(--text-main); color: white; }
+  .nav-item.active .nav-icon { filter: grayscale(0%); }
+
+  .modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: flex-end; z-index: 200; border-radius: 40px; }
+  .modal-content { background: var(--card-bg); width: 100%; border-radius: 24px 24px 0 0; padding: 24px 20px; animation: slideUp 0.3s ease; max-height: 90%; overflow-y: auto; }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-content h3 { margin-bottom: 15px; font-size: 1.2rem; }
+  .modal-input, .modal-select { width: 100%; padding: 14px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 12px; font-size: 1rem; outline: none; }
+  .modal-btn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer; }
+  .modal-close { text-align: center; margin-top: 15px; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; }
+
+  .admin-user-card { background: var(--card-bg); border-radius: var(--radius-md); padding: 14px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
+  .admin-user-info h4 { font-size: 0.95rem; color: var(--text-main); }
+  .admin-user-info p { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+  .admin-badge { background: var(--danger); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; }
+
+  /* CALENDAR */
+  .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .calendar-header h3 { font-size: 1.1rem; color: var(--text-main); }
+  .calendar-nav { background: var(--gray-btn); border: none; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; cursor: pointer; font-size: 1.2rem; }
+  .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px; }
+  .cal-day-name { text-align: center; font-size: 0.7rem; color: var(--text-muted); font-weight: 600; padding: 6px 0; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 0.85rem; font-weight: 500; cursor: pointer; position: relative; background: var(--card-bg); color: var(--text-main); }
+  .cal-day.empty { background: transparent; cursor: default; }
+  .cal-day.today { background: var(--primary); color: white; }
+  .cal-day.selected { background: #ff9500; color: white; }
+  .cal-day.has-task::after { content: ''; position: absolute; bottom: 4px; width: 5px; height: 5px; border-radius: 50%; background: var(--danger); }
+  .cal-day.today.has-task::after, .cal-day.selected.has-task::after { background: white; }
+
+  /* HEALTH CARDS */
+  .health-card { background: var(--card-bg); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); display: flex; justify-content: space-between; align-items: center; }
+  .health-info h4 { font-size: 0.95rem; color: var(--text-main); margin-bottom: 4px; }
+  .health-info p { font-size: 0.8rem; color: var(--text-muted); }
+  .health-value { font-size: 1.1rem; font-weight: 700; color: var(--text-main); }
+  
+  .app-container::-webkit-scrollbar { display: none; }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  
+  <!-- AUTH -->
+  <div id="auth-screen">
+    <img src="icon-1024.png" alt="Pati" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 20px; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">
+    <h1 id="auth-title">Welcome Back!</h1>
+    <p id="auth-subtitle">Sign in to care for your pet</p>
+    <input type="text" id="auth-name" class="auth-input" placeholder="Your Name" style="display: none;">
+    <input type="email" id="auth-email" class="auth-input" placeholder="Email">
+    <input type="password" id="auth-pass" class="auth-input" placeholder="Password">
+    <div id="auth-error" class="auth-error"></div>
+    <button id="auth-action-btn" class="auth-btn" onclick="handleAuth()">Login</button>
+    <div class="auth-switch" onclick="toggleAuthMode()"><span id="auth-switch-text">Don't have an account? Sign up</span></div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="main-app">
+    
+    <!-- HOME -->
+    <div id="page-home" class="page active">
+      <header class="header">
+        <div class="user-info">
+          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User" class="avatar">
+          <div class="greeting">
+            <h2 id="greeting-name">Hey!</h2>
+            <p>How's your pet doing today?</p>
+          </div>
+        </div>
+        <button class="icon-btn">🔔</button>
+      </header>
+
+      <section class="pet-card-section">
+        <div class="pet-card">
+          <div class="pet-image-wrapper">
+            <svg viewBox="0 0 100 100" class="mascot-svg">
+              <ellipse cx="20" cy="50" rx="15" ry="30" fill="#c49c6e" transform="rotate(-15 20 50)"/>
+              <ellipse cx="80" cy="50" rx="15" ry="30" fill="#c49c6e" transform="rotate(15 80 50)"/>
+              <circle cx="50" cy="55" r="40" fill="#e0cda9"/>
+              <circle cx="35" cy="50" r="5" fill="#1c1c1e"/><circle cx="37" cy="48" r="1.5" fill="white"/>
+              <circle cx="65" cy="50" r="5" fill="#1c1c1e"/><circle cx="67" cy="48" r="1.5" fill="white"/>
+              <ellipse cx="50" cy="65" rx="8" ry="6" fill="#1c1c1e"/>
+              <path d="M 45 70 Q 50 85 55 70 Z" fill="#ff6b6b"/>
+              <circle cx="28" cy="65" r="6" fill="#ffb3b3" opacity="0.6"/><circle cx="72" cy="65" r="6" fill="#ffb3b3" opacity="0.6"/>
+            </svg>
+          </div>
+          <div class="pet-details">
+            <h1 id="pet-display-name">Pati <span style="font-size:0.8rem; opacity:0.6; cursor:pointer;" onclick="openEditPet()">✎</span></h1>
+            <p id="pet-display-type">Golden Retriever</p>
+          </div>
+          <button class="mood-btn" onclick="openMood()">Mood: <span id="mood-display">🐾</span> ✎</button>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-header"><h3>Today's care</h3><button class="add-btn" onclick="openModal()">+</button></div>
+        <div class="task-list" id="task-container"><p style="color:var(--text-muted); font-size:0.9rem;">Loading...</p></div>
+      </section>
+
+      <section>
+        <div class="section-header"><h3>Wellness</h3></div>
+        <div class="wellness-grid">
+          <div class="wellness-card"><div class="wellness-icon">🦴</div><div class="wellness-data"><h2 id="latest-weight">—</h2><p>Weight</p></div></div>
+          <div class="wellness-card"><div class="wellness-icon">💉</div><div class="wellness-data"><h2 id="next-vet">—</h2><p>Next vet</p></div></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- PLANNER (Calendar) -->
+    <div id="page-planner" class="page">
+      <div class="calendar-header">
+        <button class="calendar-nav" onclick="changeMonth(-1)">‹</button>
+        <h3 id="calendar-month">Loading...</h3>
+        <button class="calendar-nav" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="section-header"><h3 id="selected-date-label">Tasks</h3><button class="add-btn" onclick="openModal()">+</button></div>
+      <div class="task-list" id="planner-tasks"><p style="color:var(--text-muted); font-size:0.9rem;">Select a day</p></div>
+    </div>
+
+    <!-- HEALTH -->
+    <div id="page-health" class="page">
+      <h2 style="margin-bottom: 20px;">Health Records</h2>
+      
+      <div class="section-header"><h3>Weight</h3><button class="add-btn" onclick="openHealth('weight')">+</button></div>
+      <div id="health-weight-list"></div>
+
+      <div class="section-header" style="margin-top: 20px;"><h3>Vet visits</h3><button class="add-btn" onclick="openHealth('vet')">+</button></div>
+      <div id="health-vet-list"></div>
+
+      <div class="section-header" style="margin-top: 20px;"><h3>Vaccinations</h3><button class="add-btn" onclick="openHealth('vac')">+</button></div>
+      <div id="health-vac-list"></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div id="page-profile" class="page">
+      <h2 style="margin-bottom: 20px;">My Profile</h2>
+      <div class="pet-card" style="flex-direction: column; align-items: flex-start; margin-bottom: 20px;">
+        <p style="color: #a1a1a6; font-size: 0.8rem; margin-bottom: 5px;">Logged in as</p>
+        <h2 id="profile-name" style="color: white; font-size: 1.5rem;">User</h2>
+        <p id="profile-email" style="color: #a1a1a6; font-size: 0.85rem; margin-top: 5px;">email@example.com</p>
+      </div>
+      <button id="admin-btn" class="auth-btn" style="background: #ff9500; max-width: 100%; display: none; margin-bottom: 10px;" onclick="switchPage('admin', document.querySelectorAll('.nav-item')[3])">👑 Admin Panel</button>
+      <button class="auth-btn" style="background: var(--danger); max-width: 100%;" onclick="logout()">Log Out</button>
+    </div>
+
+    <!-- ADMIN -->
+    <div id="page-admin" class="page">
+      <h2 style="margin-bottom: 20px;">👑 Admin Panel</h2>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 16px;">All registered users:</p>
+      <div id="admin-users-list"><p style="color: var(--text-muted);">Loading...</p></div>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+      <a class="nav-item active" onclick="switchPage('home', this)"><span class="nav-icon">🏠</span><span class="nav-label">Home</span></a>
+      <a class="nav-item" onclick="switchPage('planner', this)"><span class="nav-icon">📅</span><span class="nav-label">Planner</span></a>
+      <a class="nav-item" onclick="switchPage('health', this)"><span class="nav-icon">❤️</span><span class="nav-label">Health</span></a>
+      <a class="nav-item" onclick="switchPage('profile', this)"><span class="nav-icon">👤</span><span class="nav-label">Profile</span></a>
+    </nav>
+
+    <!-- ADD TASK MODAL -->
+    <div class="modal-overlay" id="task-modal">
+      <div class="modal-content">
+        <h3>Add New Care</h3>
+        <input type="text" id="task-name" class="modal-input" placeholder="e.g. Morning Walk">
+        <input type="time" id="task-time" class="modal-input">
+        <input type="date" id="task-date" class="modal-input">
+        <select id="task-icon" class="modal-select">
+          <option value="🍲">🍲 Food</option>
+          <option value="🦴">🦴 Walk / Bone</option>
+          <option value="💊">💊 Medicine</option>
+          <option value="💧">💧 Water</option>
+        </select>
+        <button class="modal-btn" onclick="addTask()">Save Task</button>
+        <div class="modal-close" onclick="closeModal('task-modal')">Cancel</div>
+      </div>
+    </div>
+
+    <!-- EDIT PET MODAL -->
+    <div class="modal-overlay" id="pet-modal">
+      <div class="modal-content">
+        <h3>Edit Pet Info</h3>
+        <input type="text" id="edit-pet-name" class="modal-input" placeholder="Pet name">
+        <input type="text" id="edit-pet-type" class="modal-input" placeholder="Breed/Type">
+        <button class="modal-btn" onclick="savePet()">Save</button>
+        <div class="modal-close" onclick="closeModal('pet-modal')">Cancel</div>
+      </div>
+    </div>
+
+    <!-- MOOD MODAL -->
+    <div class="modal-overlay" id="mood-modal">
+      <div class="modal-content">
+        <h3>How's your pet feeling?</h3>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px;" id="mood-options"></div>
+        <div class="modal-close" onclick="closeModal('mood-modal')">Cancel</div>
+      </div>
+    </div>
+
+    <!-- HEALTH MODAL -->
+    <div class="modal-overlay" id="health-modal">
+      <div class="modal-content">
+        <h3 id="health-modal-title">Add Record</h3>
+        <input type="date" id="health-date" class="modal-input">
+        <input type="text" id="health-value" class="modal-input" placeholder="Value (e.g. 12.4 kg)">
+        <input type="text" id="health-note" class="modal-input" placeholder="Note (optional)">
+        <button class="modal-btn" onclick="saveHealth()">Save</button>
+        <div class="modal-close" onclick="closeModal('health-modal')">Cancel</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, getDocs, addDoc, updateDoc, deleteDoc, query, where, serverTimestamp, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBHrbLpJvFEPI7NcHUMefOuOiKjl2vyIBE",
+    authDomain: "pati-c9fdc.firebaseapp.com",
+    projectId: "pati-c9fdc",
+    storageBucket: "pati-c9fdc.firebasestorage.app",
+    messagingSenderId: "463955938504",
+    appId: "1:463955938504:web:6c0ba60386225e17ae69fd"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let isLoginMode = true;
+  let currentUser = null;
+  let userData = { name: "User", role: "user", petName: "Pati", petType: "Golden Retriever", mood: "🐾" };
+  let allTasks = [];
+  let currentMonth = new Date();
+  let selectedDate = new Date().toISOString().split('T')[0];
+  let healthRecords = [];
+
+  // ===== AUTH =====
+  window.toggleAuthMode = function() {
+    isLoginMode = !isLoginMode;
+    document.getElementById('auth-title').innerText = isLoginMode ? "Welcome Back!" : "Create Account";
+    document.getElementById('auth-subtitle').innerText = isLoginMode ? "Sign in to care for your pet" : "Join PatiQare today";
+    document.getElementById('auth-action-btn').innerText = isLoginMode ? "Login" : "Sign Up";
+    document.getElementById('auth-switch-text').innerText = isLoginMode ? "Don't have an account? Sign up" : "Already have an account? Login";
+    document.getElementById('auth-name').style.display = isLoginMode ? 'none' : 'block';
+    document.getElementById('auth-error').innerText = '';
+  };
+
+  window.handleAuth = async function() {
+    const name = document.getElementById('auth-name').value.trim();
+    const email = document.getElementById('auth-email').value.trim();
+    const pass = document.getElementById('auth-pass').value;
+    const errEl = document.getElementById('auth-error');
+    errEl.innerText = '';
+    if (!email || !pass) { errEl.innerText = "Please fill all fields"; return; }
+    if (!isLoginMode && !name) { errEl.innerText = "Please enter your name"; return; }
+    try {
+      if (isLoginMode) {
+        await signInWithEmailAndPassword(auth, email, pass);
+      } else {
+        const cred = await createUserWithEmailAndPassword(auth, email, pass);
+        await setDoc(doc(db, "users", cred.user.uid), {
+          name, email, role: "user", petName: "Pati", petType: "Golden Retriever", mood: "🐾", createdAt: serverTimestamp()
+        });
+      }
+    } catch (err) { errEl.innerText = err.message.replace("Firebase: ", ""); }
+  };
+
+  window.logout = async function() { await signOut(auth); };
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      const userDoc = await getDoc(doc(db, "users", user.uid));
+      userData = userDoc.exists() ? { ...userData, ...userDoc.data() } : userData;
+      
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+      document.getElementById('greeting-name').innerText = `Hey, ${userData.name}!`;
+      document.getElementById('profile-name').innerText = userData.name;
+      document.getElementById('profile-email').innerText = userData.email || user.email;
+      document.getElementById('pet-display-name').innerHTML = `${userData.petName} <span style="font-size:0.8rem; opacity:0.6; cursor:pointer;" onclick="openEditPet()">✎</span>`;
+      document.getElementById('pet-display-type').innerText = userData.petType;
+      document.getElementById('mood-display').innerText = userData.mood || '🐾';
+      document.getElementById('admin-btn').style.display = userData.role === 'admin' ? 'block' : 'none';
+      
+      await loadAllData();
+    } else {
+      currentUser = null;
+      document.getElementById('auth-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+    }
+  });
+
+  // ===== NAV =====
+  window.switchPage = function(pageId, navElement) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(`page-${pageId}`).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    if (navElement) navElement.classList.add('active');
+    if (pageId === 'admin') loadAdminUsers();
+    if (pageId === 'planner') renderCalendar();
+  };
+
+  // ===== LOAD ALL =====
+  async function loadAllData() {
+    // Tasks
+    const tq = query(collection(db, "tasks"), where("uid", "==", currentUser.uid));
+    const tsnap = await getDocs(tq);
+    allTasks = tsnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    // Health
+    const hq = query(collection(db, "health"), where("uid", "==", currentUser.uid));
+    const hsnap = await getDocs(hq);
+    healthRecords = hsnap.docs.map(d => ({ id: d.id, ...d.data() }));
+    
+    renderHomeTasks();
+    renderCalendar();
+    renderHealth();
+    updateWellnessSummary();
+  }
+
+  // ===== HOME TASKS (today only) =====
+  function renderHomeTasks() {
+    const container = document.getElementById('task-container');
+    const today = new Date().toISOString().split('T')[0];
+    const todayTasks = allTasks.filter(t => t.date === today);
+    
+    if (todayTasks.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No tasks for today. Click + to add.</p>';
+      return;
+    }
+    container.innerHTML = '';
+    todayTasks.forEach(task => {
+      const div = document.createElement('div');
+      div.className = `task-item ${task.completed ? 'completed' : ''}`;
+      div.innerHTML = `
+        <div class="task-icon">${task.icon}</div>
+        <div class="task-content" onclick="toggleTask('${task.id}', ${!task.completed})">
+          <h4>${task.name}</h4><p>${task.time}</p>
+        </div>
+        <div class="task-checkbox" onclick="toggleTask('${task.id}', ${!task.completed})">${task.completed ? '✓' : ''}</div>
+        <div class="delete-btn" onclick="deleteTask('${task.id}')">×</div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ===== CALENDAR =====
+  window.changeMonth = function(delta) {
+    currentMonth.setMonth(currentMonth.getMonth() + delta);
+    renderCalendar();
+  };
+
+  function renderCalendar() {
+    const grid = document.getElementById('calendar-grid');
+    const monthLabel = document.getElementById('calendar-month');
+    if (!grid) return;
+    
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    monthLabel.innerText = `${monthNames[month]} ${year}`;
+    
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const todayStr = new Date().toISOString().split('T')[0];
+    
+    grid.innerHTML = '';
+    ['S','M','T','W','T','F','S'].forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'cal-day-name';
+      el.innerText = d;
+      grid.appendChild(el);
+    });
+    
+    for (let i = 0; i < (firstDay === 0 ? 6 : firstDay - 1); i++) {
+      const el = document.createElement('div');
+      el.className = 'cal-day empty';
+      grid.appendChild(el);
+    }
+    
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const el = document.createElement('div');
+      el.className = 'cal-day';
+      el.innerText = d;
+      if (dateStr === todayStr) el.classList.add('today');
+      if (dateStr === selectedDate) el.classList.add('selected');
+      if (allTasks.some(t => t.date === dateStr)) el.classList.add('has-task');
+      el.onclick = () => { selectedDate = dateStr; renderCalendar(); renderPlannerTasks(); };
+      grid.appendChild(el);
+    }
+    
+    renderPlannerTasks();
+  }
+
+  function renderPlannerTasks() {
+    const container = document.getElementById('planner-tasks');
+    const label = document.getElementById('selected-date-label');
+    if (!container) return;
+    
+    const [y, m, d] = selectedDate.split('-');
+    label.innerText = `Tasks — ${d}/${m}/${y}`;
+    
+    const dayTasks = allTasks.filter(t => t.date === selectedDate);
+    if (dayTasks.length === 0) {
+      container.innerHTML = '<p style="color:var(--text-muted); font-size:0.9rem;">No tasks for this day.</p>';
+      return;
+    }
+    container.innerHTML = '';
+    dayTasks.forEach(task => {
+      const div = document.createElement('div');
+      div.className = `task-item ${task.completed ? 'completed' : ''}`;
+      div.innerHTML = `
+        <div class="task-icon">${task.icon}</div>
+        <div class="task-content" onclick="toggleTask('${task.id}', ${!task.completed})">
+          <h4>${task.name}</h4><p>${task.time}</p>
+        </div>
+        <div class="task-checkbox" onclick="toggleTask('${task.id}', ${!task.completed})">${task.completed ? '✓' : ''}</div>
+        <div class="delete-btn" onclick="deleteTask('${task.id}')">×</div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  // ===== TASK ACTIONS =====
+  window.toggleTask = async function(id, newCompleted) {
+    await updateDoc(doc(db, "tasks", id), { completed: newCompleted });
+    const t = allTasks.find(t => t.id === id);
+    if (t) t.completed = newCompleted;
+    renderHomeTasks(); renderCalendar();
+  };
+
+  window.deleteTask = async function(id) {
+    if (!confirm("Delete this task?")) return;
+    await deleteDoc(doc(db, "tasks", id));
+    allTasks = allTasks.filter(t => t.id !== id);
+    renderHomeTasks(); renderCalendar();
+  };
+
+  window.openModal = function() {
+    document.getElementById('task-date').value = selectedDate;
+    document.getElementById('task-modal').style.display = 'flex';
+  };
+  window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+
+  window.addTask = async function() {
+    const name = document.getElementById('task-name').value.trim();
+    const time = document.getElementById('task-time').value;
+    const date = document.getElementById('task-date').value;
+    const icon = document.getElementById('task-icon').value;
+    if (!name || !time || !date) return alert("Please fill all fields");
+    
+    const [hour, min] = time.split(':');
+    const h = parseInt(hour);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 || 12;
+    const formattedTime = `${h12}:${min} ${ampm}`;
+    
+    const docRef = await addDoc(collection(db, "tasks"), {
+      uid: currentUser.uid, name, time: formattedTime, date, icon, completed: false, createdAt: serverTimestamp()
+    });
+    allTasks.push({ id: docRef.id, uid: currentUser.uid, name, time: formattedTime, date, icon, completed: false });
+    renderHomeTasks(); renderCalendar();
+    document.getElementById('task-name').value = '';
+    document.getElementById('task-time').value = '';
+    closeModal('task-modal');
+  };
+
+  // ===== EDIT PET =====
+  window.openEditPet = function() {
+    document.getElementById('edit-pet-name').value = userData.petName;
+    document.getElementById('edit-pet-type').value = userData.petType;
+    document.getElementById('pet-modal').style.display = 'flex';
+  };
+
+  window.savePet = async function() {
+    const petName = document.getElementById('edit-pet-name').value.trim();
+    const petType = document.getElementById('edit-pet-type').value.trim();
+    if (!petName) return alert("Enter pet name");
+    await updateDoc(doc(db, "users", currentUser.uid), { petName, petType });
+    userData.petName = petName; userData.petType = petType;
+    document.getElementById('pet-display-name').innerHTML = `${petName} <span style="font-size:0.8rem; opacity:0.6; cursor:pointer;" onclick="openEditPet()">✎</span>`;
+    document.getElementById('pet-display-type').innerText = petType;
+    closeModal('pet-modal');
+  };
+
+  // ===== MOOD =====
+  window.openMood = function() {
+    const moods = ['🐾','😊','😴','😋','🤒','🎾','😻','🤩','🥰','😎'];
+    const container = document.getElementById('mood-options');
+    container.innerHTML = '';
+    moods.forEach(m => {
+      const btn = document.createElement('div');
+      btn.style.cssText = 'font-size: 2rem; padding: 10px; cursor: pointer; border-radius: 12px; background: #f0f0f0;';
+      btn.innerText = m;
+      btn.onclick = async () => {
+        await updateDoc(doc(db, "users", currentUser.uid), { mood: m });
+        userData.mood = m;
+        document.getElementById('mood-display').innerText = m;
+        closeModal('mood-modal');
+      };
+      container.appendChild(btn);
+    });
+    document.getElementById('mood-modal').style.display = 'flex';
+  };
+
+  // ===== HEALTH =====
+  let healthMode = 'weight';
+  window.openHealth = function(mode) {
+    healthMode = mode;
+    const titles = { weight: 'Add Weight Record', vet: 'Add Vet Visit', vac: 'Add Vaccination' };
+    document.getElementById('health-modal-title').innerText = titles[mode];
+    document.getElementById('health-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('health-value').value = '';
+    document.getElementById('health-value').placeholder = mode === 'weight' ? 'e.g. 12.4 kg' : mode === 'vet' ? 'e.g. General checkup' : 'e.g. Rabies';
+    document.getElementById('health-note').value = '';
+    document.getElementById('health-modal').style.display = 'flex';
+  };
+
+  window.saveHealth = async function() {
+    const date = document.getElementById('health-date').value;
+    const value = document.getElementById('health-value').value.trim();
+    const note = document.getElementById('health-note').value.trim();
+    if (!date || !value) return alert("Fill date and value");
+    const docRef = await addDoc(collection(db, "health"), {
+      uid: currentUser.uid, type: healthMode, date, value, note, createdAt: serverTimestamp()
+    });
+    healthRecords.push({ id: docRef.id, uid: currentUser.uid, type: healthMode, date, value, note });
+    renderHealth();
+    updateWellnessSummary();
+    closeModal('health-modal');
+  };
+
+  function renderHealth() {
+    const weightList = document.getElementById('health-weight-list');
+    const vetList = document.getElementById('health-vet-list');
+    const vacList = document.getElementById('health-vac-list');
+    if (!weightList) return;
+    
+    const render = (type, container) => {
+      const items = healthRecords.filter(r => r.type === type).sort((a,b) => b.date.localeCompare(a.date));
+      if (items.length === 0) { container.innerHTML = '<p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:12px;">No records yet.</p>'; return; }
+      container.innerHTML = '';
+      items.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'health-card';
+        card.innerHTML = `
+          <div class="health-info"><h4>${r.value}</h4><p>${r.date}${r.note ? ' — ' + r.note : ''}</p></div>
+          <div class="delete-btn" onclick="deleteHealth('${r.id}')">×</div>
+        `;
+        container.appendChild(card);
+      });
+    };
+    render('weight', weightList);
+    render('vet', vetList);
+    render('vac', vacList);
+  }
+
+  window.deleteHealth = async function(id) {
+    if (!confirm("Delete?")) return;
+    await deleteDoc(doc(db, "health", id));
+    healthRecords = healthRecords.filter(r => r.id !== id);
+    renderHealth(); updateWellnessSummary();
+  };
+
+  function updateWellnessSummary() {
+    const weights = healthRecords.filter(r => r.type === 'weight').sort((a,b) => b.date.localeCompare(a.date));
+    document.getElementById('latest-weight').innerText = weights.length > 0 ? weights[0].value : '—';
+    
+    const vets = healthRecords.filter(r => r.type === 'vet').sort((a,b) => a.date.localeCompare(b.date));
+    const upcoming = vets.find(v => v.date >= new Date().toISOString().split('T')[0]);
+    if (upcoming) {
+      const [y, m, d] = upcoming.date.split('-');
+      document.getElementById('next-vet').innerText = `${m}/${d}`;
+    } else {
+      document.getElementById('next-vet').innerText = '—';
+    }
+  }
+
+  // ===== ADMIN =====
+  async function loadAdminUsers() {
+    const container = document.getElementById('admin-users-list');
+    container.innerHTML = '<p style="color:var(--text-muted);">Loading...</p>';
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      if (snap.empty) { container.innerHTML = '<p style="color:var(--text-muted);">No users.</p>'; return; }
+      container.innerHTML = '';
+      snap.forEach(d => {
+        const u = d.data();
+        const div = document.createElement('div');
+        div.className = 'admin-user-card';
+        div.innerHTML = `<div class="admin-user-info"><h4>${u.name || 'Unknown'}</h4><p>${u.email || ''}</p></div>${u.role === 'admin' ? '<span class="admin-badge">ADMIN</span>' : ''}`;
+        container.appendChild(div);
+      });
+    } catch (err) { container.innerHTML = `<p style="color:var(--danger);">Error: ${err.message}</p>`; }
+  }
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(err => console.log(err));
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "PatiQare - Pet Care",
+  "short_name": "PatiQare",
+  "description": "Modern pet care app for feeding, walking and wellness tracking.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f7f7",
+  "theme_color": "#1c1c1e",
+  "icons": [
+    {
+      "src": "icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
